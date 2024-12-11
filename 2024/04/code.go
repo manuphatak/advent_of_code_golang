@@ -1,6 +1,8 @@
 package main
 
 import (
+	"strings"
+
 	"github.com/jpillora/puzzler/harness/aoc"
 )
 
@@ -8,17 +10,70 @@ func main() {
 	aoc.Harness(run)
 }
 
-// on code change, run will be executed 4 times:
-// 1. with: false (part1), and example input
-// 2. with: true (part2), and example input
-// 3. with: false (part1), and user input
-// 4. with: true (part2), and user input
-// the return value of each run is printed to stdout
 func run(part2 bool, input string) any {
-	// when you're ready to do part 2, remove this "not implemented" block
 	if part2 {
 		return "not implemented"
 	}
-	// solve part 1 here
-	return 42
+
+	lines := strings.Split(strings.TrimSpace(input), "\n")
+
+	matches := 0
+	for i, line := range lines {
+		for j := range line {
+			matches += countMatches(lines, i, j)
+		}
+	}
+	return matches
+}
+
+type direction struct {
+	x, y int
+}
+
+var directions = [8]direction{
+	{0, 1},
+	{1, 0},
+	{0, -1},
+	{-1, 0},
+	{1, 1},
+	{1, -1},
+	{-1, 1},
+	{-1, -1},
+}
+
+func countMatches(lines []string, i, j int) int {
+	count := 0
+	for _, direction := range directions {
+		if lines[i][j] != 'X' {
+			continue
+		}
+
+		if !lineInbound(lines, i+(direction.y*3)) {
+			continue
+		}
+		if !rowInbound(lines, j+(direction.x*3)) {
+			continue
+		}
+
+		if lines[i+(direction.y*1)][j+(direction.x*1)] != 'M' {
+			continue
+		}
+		if lines[i+(direction.y*2)][j+(direction.x*2)] != 'A' {
+			continue
+		}
+		if lines[i+(direction.y*3)][j+(direction.x*3)] != 'S' {
+			continue
+		}
+		count += 1
+	}
+
+	return count
+}
+
+func lineInbound(lines []string, i int) bool {
+	return i >= 0 && i < len(lines)
+}
+
+func rowInbound(lines []string, j int) bool {
+	return j >= 0 && j < len(lines[0])
 }
