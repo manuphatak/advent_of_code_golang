@@ -1,6 +1,9 @@
 package main
 
 import (
+	"regexp"
+	"strconv"
+
 	"github.com/jpillora/puzzler/harness/aoc"
 )
 
@@ -19,6 +22,21 @@ func run(part2 bool, input string) any {
 	if part2 {
 		return "not implemented"
 	}
-	// solve part 1 here
-	return 42
+
+	re := regexp.MustCompile(`(?m)(?P<mul>mul\((?P<l>\d{0,3}),(?P<r>\d{0,3})\))`)
+
+	lIndex, rIndex := re.SubexpIndex("l"), re.SubexpIndex("r")
+
+	sumProduct := 0
+	for _, match := range re.FindAllStringSubmatch(input, -1) {
+		l, r := parseInt(match[lIndex]), parseInt(match[rIndex])
+		sumProduct += l * r
+	}
+
+	return sumProduct
+}
+
+func parseInt(s string) int {
+	n, _ := strconv.Atoi(s)
+	return n
 }
