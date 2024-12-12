@@ -16,10 +16,11 @@ type orderingRule struct {
 }
 
 type update struct {
-	middle int
+	raw    []int
 	lookup map[int]int
 }
 
+// part 1
 func (u update) follows(rules []orderingRule) bool {
 	for _, rule := range rules {
 		l, ok := u.lookup[rule.l]
@@ -42,12 +43,67 @@ func (u update) follows(rules []orderingRule) bool {
 	return true
 }
 
-func run(part2 bool, input string) any {
-	// when you're ready to do part 2, remove this "not implemented" block
-	if part2 {
-		return "not implemented"
+// part 2
+func (u update) correctedMiddle(rules []orderingRule) int {
+	filteredRules := []orderingRule{}
+
+	for _, rule := range rules {
+		_, ok := u.lookup[rule.l]
+		if !ok {
+			continue
+		}
+
+		_, ok = u.lookup[rule.r]
+		if !ok {
+			continue
+		}
+		filteredRules = append(filteredRules, rule)
 	}
 
+	sorted := topologicalSort(u.raw, filteredRules)
+
+	return middleValue(sorted)
+}
+
+func topologicalSort(updates []int, filteredRules []orderingRule) []int {
+	// Setup
+	adjList := make(map[int][]int, len(updates))
+	visited := make(map[int]bool, len(updates))
+
+	for _, update := range updates {
+		adjList[update] = []int{}
+		visited[update] = false
+	}
+
+	for _, rule := range filteredRules {
+		adjList[rule.l] = append(adjList[rule.l], rule.r)
+	}
+
+	// Run topological sort
+	stack := []int{}
+
+	for _, update := range updates {
+		if !visited[update] {
+			topologicalSortHelper(update, adjList, &visited, &stack)
+		}
+	}
+
+	return stack
+}
+
+func topologicalSortHelper(update int, adjList map[int][]int, visited *map[int]bool, stack *[]int) {
+	(*visited)[update] = true
+
+	for _, neighbor := range adjList[update] {
+		if !(*visited)[neighbor] {
+			topologicalSortHelper(neighbor, adjList, visited, stack)
+		}
+	}
+
+	*stack = append(*stack, update)
+}
+
+func run(part2 bool, input string) any {
 	sections := strings.Split(strings.TrimSpace(input), "\n\n")
 
 	if len(sections) != 2 {
@@ -74,13 +130,20 @@ func run(part2 bool, input string) any {
 			lookup[n] = i
 		}
 
-		updates = append(updates, update{middleValue(raw), lookup})
+		updates = append(updates, update{raw, lookup})
 	}
 
 	sumOfMiddles := 0
 	for _, update := range updates {
-		if update.follows(orderingRules) {
-			sumOfMiddles += update.middle
+		if part2 {
+			if !update.follows(orderingRules) {
+				sumOfMiddles += update.correctedMiddle(orderingRules)
+			}
+
+		} else {
+			if update.follows(orderingRules) {
+				sumOfMiddles += middleValue(update.raw)
+			}
 		}
 	}
 
