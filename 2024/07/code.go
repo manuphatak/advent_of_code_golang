@@ -17,10 +17,7 @@ type equation struct {
 }
 
 func run(part2 bool, input string) any {
-	// when you're ready to do part 2, remove this "not implemented" block
-	if part2 {
-		return "not implemented"
-	}
+
 	equations := []equation{}
 
 	for _, line := range strings.Split(strings.TrimSpace(input), "\n") {
@@ -38,15 +35,21 @@ func run(part2 bool, input string) any {
 
 	for _, equation := range equations {
 		running, xs := equation.xs[0], equation.xs[1:]
-		if canEqualTest(equation.test, running, xs) {
-			totalCalibrationResult += equation.test
+		if part2 {
+			if canEqualTest(equation.test, running, xs, []string{"+", "*", "||"}) {
+				totalCalibrationResult += equation.test
+			}
+		} else {
+			if canEqualTest(equation.test, running, xs, []string{"+", "*"}) {
+				totalCalibrationResult += equation.test
+			}
 		}
 	}
 
 	return totalCalibrationResult
 }
 
-func canEqualTest(test, running int, xs []int) bool {
+func canEqualTest(test, running int, xs []int, operations []string) bool {
 
 	if running > test {
 		return false
@@ -57,7 +60,30 @@ func canEqualTest(test, running int, xs []int) bool {
 	}
 
 	x, xs := xs[0], xs[1:]
-	return canEqualTest(test, running+x, xs) || canEqualTest(test, running*x, xs)
+
+	for _, operation := range operations {
+		var nextRunning int
+		switch operation {
+		case "+":
+			nextRunning = running + x
+		case "*":
+			nextRunning = running * x
+		case "||":
+			nextRunning = concat(running, x)
+		default:
+			panic("unknown operation")
+		}
+
+		if canEqualTest(test, nextRunning, xs, operations) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func concat(x, y int) int {
+	return parseInt(strconv.Itoa(x) + strconv.Itoa(y))
 }
 
 func parseInt(s string) int {
