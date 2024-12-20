@@ -26,11 +26,6 @@ func (s Set[K]) Add(v K) {
 }
 
 func run(part2 bool, input string) any {
-	// when you're ready to do part 2, remove this "not implemented" block
-	if part2 {
-		return "not implemented"
-	}
-
 	antennaFrequencies := map[string][]point{}
 
 	lines := strings.Split(strings.TrimSpace(input), "\n")
@@ -48,16 +43,35 @@ func run(part2 bool, input string) any {
 	}
 
 	antinodes := Set[point]{}
+
 	for _, antennas := range antennaFrequencies {
 		for pair := range permutations2(antennas) {
 			distance := sub(pair[1], pair[0])
 
-			if node := sub(pair[0], distance); inRange(node, rows, cols) {
-				antinodes.Add(node)
-			}
+			if part2 {
+				addAllOnPath := func(node point, move func(node, distance point) point) {
+					antinodes.Add(node)
+					for {
+						node = move(node, distance)
+						if inRange(node, rows, cols) {
+							antinodes.Add(node)
+						} else {
+							break
+						}
+					}
+				}
 
-			if node := add(pair[1], distance); inRange(node, rows, cols) {
-				antinodes.Add(node)
+				addAllOnPath(pair[0], sub)
+				addAllOnPath(pair[1], add)
+			} else {
+				if node := sub(pair[0], distance); inRange(node, rows, cols) {
+					antinodes.Add(node)
+				}
+
+				if node := add(pair[1], distance); inRange(node, rows, cols) {
+					antinodes.Add(node)
+				}
+
 			}
 		}
 	}
