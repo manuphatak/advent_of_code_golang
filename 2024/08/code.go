@@ -1,6 +1,9 @@
 package main
 
 import (
+	"iter"
+	"strings"
+
 	"github.com/jpillora/puzzler/harness/aoc"
 )
 
@@ -8,17 +11,78 @@ func main() {
 	aoc.Harness(run)
 }
 
-// on code change, run will be executed 4 times:
-// 1. with: false (part1), and example input
-// 2. with: true (part2), and example input
-// 3. with: false (part1), and user input
-// 4. with: true (part2), and user input
-// the return value of each run is printed to stdout
+type point struct {
+	y, x int
+}
+
+type Set[K comparable] map[K]struct{}
+
+func NewSet[K comparable]() Set[K] {
+	return Set[K]{}
+}
+
+func (s Set[K]) Add(v K) {
+	s[v] = struct{}{}
+}
+
 func run(part2 bool, input string) any {
 	// when you're ready to do part 2, remove this "not implemented" block
 	if part2 {
 		return "not implemented"
 	}
-	// solve part 1 here
-	return 42
+
+	antennaFrequencies := map[string][]point{}
+
+	lines := strings.Split(strings.TrimSpace(input), "\n")
+	rows, cols := len(lines), len(lines[0])
+
+	for y, line := range lines {
+		for x, cell := range line {
+			if cell == '.' {
+				continue
+			}
+
+			frequency := string(cell)
+			antennaFrequencies[frequency] = append(antennaFrequencies[frequency], point{y, x})
+		}
+	}
+
+	antinodes := Set[point]{}
+	for _, antennas := range antennaFrequencies {
+		for pair := range permutations2(antennas) {
+			distance := sub(pair[1], pair[0])
+
+			if node := sub(pair[0], distance); inRange(node, rows, cols) {
+				antinodes.Add(node)
+			}
+
+			if node := add(pair[1], distance); inRange(node, rows, cols) {
+				antinodes.Add(node)
+			}
+		}
+	}
+
+	return len(antinodes)
+}
+
+func inRange(node point, rows, cols int) bool {
+	return node.x >= 0 && node.x < cols && node.y >= 0 && node.y < rows
+}
+
+func add(l, r point) point {
+	return point{x: l.x + r.x, y: l.y + r.y}
+}
+
+func sub(l, r point) point {
+	return point{x: l.x - r.x, y: l.y - r.y}
+}
+
+func permutations2(antennas []point) iter.Seq[[2]point] {
+	return func(yield func([2]point) bool) {
+		for i := 0; i < len(antennas); i++ {
+			for j := i + 1; j < len(antennas); j++ {
+				yield([2]point{antennas[i], antennas[j]})
+			}
+		}
+	}
 }
