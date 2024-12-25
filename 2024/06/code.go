@@ -3,6 +3,7 @@ package main
 import (
 	"maps"
 	"strings"
+	"sync"
 
 	"github.com/jpillora/puzzler/harness/aoc"
 )
@@ -157,6 +158,28 @@ func (s guardSet) Has(g guard) bool {
 	return ok
 }
 
+type safeCounter struct {
+	mu sync.Mutex
+	v  int
+}
+
+func (c *safeCounter) Inc() {
+	c.mu.Lock()
+	c.v++
+	c.mu.Unlock()
+}
+
+func (c *safeCounter) Value() int {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.v
+}
+
+func newSafeCounter() *safeCounter {
+	return &safeCounter{v: 0}
+
+}
+
 func run(part2 bool, input string) any {
 
 	// 	read in the map, find the guard position
@@ -177,7 +200,9 @@ func run(part2 bool, input string) any {
 	}
 
 	if part2 {
-		count := 0
+		var wg sync.WaitGroup
+		counter := newSafeCounter()
+
 		for i := 0; i < state.rows; i++ {
 			for j := 0; j < state.cols; j++ {
 				// for each point...
@@ -191,17 +216,22 @@ func run(part2 bool, input string) any {
 				// ...otherwise, clone the state, add the obstacle, and run the simulation
 				newState := state.Clone()
 				newState.obstacles.Add(point)
-				_, ok := newState.Run()
+				wg.Add(1)
 
-				// if the simulation failed (found an infinite loop), increment the count
-				if !ok {
-					count += 1
-				}
+				go func() {
+					_, ok := newState.Run()
 
+					// if the simulation failed (found an infinite loop), increment the count
+					if !ok {
+						counter.Inc()
+					}
+					wg.Done()
+				}()
 			}
 		}
 
-		return count
+		wg.Wait()
+		return counter.Value()
 
 	} else {
 		state.obstacles.Add(point{0, 0})
