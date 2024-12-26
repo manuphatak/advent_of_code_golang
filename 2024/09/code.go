@@ -152,8 +152,7 @@ func compactDefragment(input []int) []int {
 		}
 	}
 
-	slices.Reverse(fileBlockElements)
-	for _, e := range fileBlockElements {
+	for _, e := range slices.Backward(fileBlockElements) {
 		for mark := filesystem.Front(); mark != nil; mark = mark.Next() {
 			markValue, eValue := mark.Value.(block), e.Value.(block)
 			if markValue.Equals(eValue) {
