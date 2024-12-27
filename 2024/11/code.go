@@ -1,7 +1,7 @@
 package main
 
 import (
-	"container/list"
+	"maps"
 	"strconv"
 	"strings"
 
@@ -13,35 +13,45 @@ func main() {
 }
 
 func run(part2 bool, input string) any {
-	// when you're ready to do part 2, remove this "not implemented" block
-	if part2 {
-		return "not implemented"
-	}
-
-	stones := list.New()
+	stones := map[int]int{}
 
 	for _, v := range strings.Split(strings.TrimSpace(input), " ") {
-		stones.PushBack(parseInt(v))
+		stones[parseInt(v)]++
 	}
 
 	blinks := 25
-	for i := 0; i < blinks; i++ {
-		for e := stones.Front(); e != nil; e = e.Next() {
-			value := e.Value.(int)
-
-			if value == 0 {
-				e.Value = 1
-			} else if isEven, l, r := splitDigits(value); isEven {
-				stones.InsertBefore(l, e)
-				e.Value = r
-			} else {
-				e.Value = value * 2024
-			}
-		}
+	if part2 {
+		blinks = 75
 	}
 
-	// solve part 1 here
-	return stones.Len()
+	total := 0
+	for count := range maps.Values(simulateBlink(stones, blinks)) {
+		total += count
+	}
+	return total
+
+}
+
+func simulateBlink(stones map[int]int, remainingBlinks int) map[int]int {
+	// key value store where the key is the number on the stone and value is count of occurences
+	// Since we're getting tons of repeat #s we can dedupe the amount of calculates we do
+	nextStones := map[int]int{}
+
+	for k, count := range maps.All(stones) {
+		if k == 0 {
+			nextStones[1] += count
+		} else if isEven, l, r := splitDigits(k); isEven {
+			nextStones[l] += count
+			nextStones[r] += count
+		} else {
+			nextStones[k*2024] += count
+		}
+	}
+	if remainingBlinks == 1 {
+		return nextStones
+	} else {
+		return simulateBlink(nextStones, remainingBlinks-1)
+	}
 }
 
 func splitDigits(value int) (bool, int, int) {
