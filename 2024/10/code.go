@@ -16,7 +16,7 @@ type point struct {
 	y, x int
 }
 
-func IsInBounds(tm [][]int, p point) bool {
+func isInBounds(tm [][]int, p point) bool {
 	return p.y >= 0 && p.y < len(tm) && p.x >= 0 && p.x < len(tm[0])
 }
 
@@ -46,11 +46,6 @@ func (s Set[E]) Size() int {
 }
 
 func run(part2 bool, input string) any {
-	// when you're ready to do part 2, remove this "not implemented" block
-	if part2 {
-		return "not implemented"
-	}
-
 	trailMap := [][]int{}
 	trailHeads := []point{}
 
@@ -66,22 +61,41 @@ func run(part2 bool, input string) any {
 		trailMap = append(trailMap, trailMapRow)
 	}
 
-	score := 0
+	score, rating := 0, 0
+
 	for _, trailHead := range trailHeads {
 		trailPeaks := NewSet[point]()
-		walk(trailMap, trailHead, trailPeaks, 1)
+		rating += walk(trailMap, trailHead, trailPeaks, 1)
 		score += trailPeaks.Size()
 	}
-
-	return score
+	if part2 {
+		return rating
+	} else {
+		return score
+	}
 }
 
-func walk(trailMap [][]int, p point, trailPeaks Set[point], matchValue int) {
+// walk traverses the trailMap starting from the given point `p`, looking for
+// adjacent points that match the `matchValue`. It uses a depth-first search
+// approach to explore all valid paths. The function updates the `trailPeaks`
+// set with points that have a value of 9 and returns a rating based on the
+// number of such peaks found.
+//
+// Parameters:
+// - trailMap: A 2D slice of integers representing the trail map.
+// - p: The starting point for the traversal.
+// - trailPeaks: A set to store points that have a value of 9.
+// - matchValue: The value to match in the trail map.
+//
+// Returns:
+// - An integer rating based on the number of peaks found.
+func walk(trailMap [][]int, p point, trailPeaks Set[point], matchValue int) int {
 	var directions = [...]point{{0, 1}, {1, 0}, {0, -1}, {-1, 0}}
+	rating := 0
 
 	for _, direction := range directions {
 		nextPoint := point{p.y + direction.y, p.x + direction.x}
-		if !IsInBounds(trailMap, nextPoint) {
+		if !isInBounds(trailMap, nextPoint) {
 			continue
 		}
 
@@ -92,10 +106,13 @@ func walk(trailMap [][]int, p point, trailPeaks Set[point], matchValue int) {
 
 		if nextValue == 9 {
 			trailPeaks.Add(nextPoint)
+			rating++
 			continue
 		}
-		walk(trailMap, nextPoint, trailPeaks, matchValue+1)
+		rating += walk(trailMap, nextPoint, trailPeaks, matchValue+1)
 	}
+
+	return rating
 }
 
 func parseInt(s string) int {
